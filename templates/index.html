@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plant Disease & Yield Prediction</title>
+    <style>
+        /* Global Styles */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background-image: url('{{ url_for("static", filename="img.jpg") }}'); /* Background image */
+            background-size: cover;
+            background-position: center;
+            color: #333;
+        }
+
+        .container {
+            max-width: 600px;
+            width: 100%;
+            padding: 20px;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            color: #4CAF50;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
+        .button-group {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            margin-bottom: 30px;
+        }
+
+        .button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 15px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+
+        .button:hover {
+            background-color: #45a049;
+        }
+
+        .form-section {
+            display: none;
+            width: 100%;
+            max-width: 500px;
+        }
+
+        .visible {
+            display: block;
+        }
+
+        .file-input-container, .input-group {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+            width: 100%;
+        }
+
+        .result {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #f1f1f1;
+            border-radius: 10px;
+            font-size: 18px;
+            text-align: center;
+        }
+
+        .error {
+            color: red;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Plant Disease & Yield Prediction</h1>
+        
+        <!-- Button Group for selecting options -->
+        <div class="button-group">
+            <button id="diseaseButton" class="button">Disease Detection</button>
+            <button id="yieldButton" class="button">Yield Prediction</button>
+        </div>
+
+        <!-- Disease Detection Form -->
+        <div id="diseaseForm" class="form-section">
+            <h2>Disease Detection</h2>
+            <form id="uploadForm" enctype="multipart/form-data">
+                <div class="file-input-container">
+                    <input type="file" id="imageInput" name="file" accept="image/*" required>
+                </div>
+                <button type="button" onclick="submitDiseaseForm()" class="button">Upload and Detect</button>
+            </form>
+            
+            <!-- Centered Image Preview -->
+            <div style="display: flex; justify-content: center; margin-top: 20px;">
+                <img id="imagePreview" alt="Image Preview" style="display:none; max-width:100%; max-height:400px; border-radius: 10px;">
+            </div>
+            
+            <div id="diseaseResult" class="result"></div>
+        </div>
+
+        <!-- Yield Prediction Form -->
+        <div id="yieldForm" class="form-section">
+            <h2>Yield Prediction</h2>
+            <form id="yieldFormInputs">
+                
+                <!-- Dropdown for Crop -->
+                <div class="input-group">
+                    <label for="crop">Crop:</label>
+                    <select id="crop" required>
+                        <option value="Rice">Rice</option>
+                        <option value="Wheat">Wheat</option>
+                        <option value="Maize">Maize</option>
+                        <option value="Cotton">Cotton</option>
+                        <option value="Sugarcane">Sugarcane</option>
+                    </select>
+                </div>
+        
+                <!-- Dropdown for Season -->
+                <div class="input-group">
+                    <label for="season">Season:</label>
+                    <select id="season" required>
+                        <option value="Kharif">Kharif</option>
+                        <option value="Rabi">Rabi</option>
+                        <option value="Whole Year">Whole Year</option>
+                        <option value="Summer">Summer</option>
+                    </select>
+                </div>
+        
+                <!-- Dropdown for State -->
+                <div class="input-group">
+                    <label for="state">State:</label>
+                    <select id="state" required>
+                        <option value="Assam">Assam</option>
+                        <option value="Punjab">Punjab</option>
+                        <option value="Maharashtra">Maharashtra</option>
+                        <option value="Karnataka">Karnataka</option>
+                        <option value="Uttar Pradesh">Uttar Pradesh</option>
+                    </select>
+                </div>
+        
+                <!-- Numerical input fields with labels -->
+                <div class="input-group">
+                    <label for="area">Area (hectares):</label>
+                    <input type="number" id="area" placeholder="Enter Area" required>
+                </div>
+                <div class="input-group">
+                    <label for="production">Production (tons):</label>
+                    <input type="number" id="production" placeholder="Enter Production" required>
+                </div>
+                <div class="input-group">
+                    <label for="annualRainfall">Annual Rainfall (mm):</label>
+                    <input type="number" id="annualRainfall" placeholder="Enter Annual Rainfall" required>
+                </div>
+                <div class="input-group">
+                    <label for="fertilizer">Fertilizer (kg/ha):</label>
+                    <input type="number" id="fertilizer" placeholder="Enter Fertilizer Usage" required>
+                </div>
+                <div class="input-group">
+                    <label for="pesticide">Pesticide (kg/ha):</label>
+                    <input type="number" id="pesticide" placeholder="Enter Pesticide Usage" required>
+                </div>
+        
+                <button type="button" onclick="submitYieldForm()" class="button">Predict Yield</button>
+            </form>
+            <div id="yieldResult" class="result"></div>
+        </div>
+
+    <script>
+        const diseaseButton = document.getElementById('diseaseButton');
+        const yieldButton = document.getElementById('yieldButton');
+        const diseaseForm = document.getElementById('diseaseForm');
+        const yieldForm = document.getElementById('yieldForm');
+        const imageInput = document.getElementById('imageInput');
+        const imagePreview = document.getElementById('imagePreview');
+        const diseaseResult = document.getElementById('diseaseResult');
+        const yieldResult = document.getElementById('yieldResult');
+
+        // Show appropriate form based on selection
+        diseaseButton.addEventListener('click', function () {
+            diseaseForm.classList.add('visible');
+            yieldForm.classList.remove('visible');
+        });
+
+        yieldButton.addEventListener('click', function () {
+            yieldForm.classList.add('visible');
+            diseaseForm.classList.remove('visible');
+        });
+
+        // Image preview for Disease Detection
+        imageInput.addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    imagePreview.src = e.target.result;
+                    imagePreview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            } else {
+                imagePreview.style.display = 'none';
+            }
+        });
+
+        // Submit Disease Detection Form via AJAX
+        async function submitDiseaseForm() {
+            const formData = new FormData();
+            formData.append('file', imageInput.files[0]);
+
+            diseaseResult.innerHTML = 'Processing...';
+
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+                if (response.ok) {
+                    diseaseResult.innerHTML = `<h2>Prediction: ${result.prediction}</h2>`;
+                } else {
+                    diseaseResult.innerHTML = `<p class="error">${result.error}</p>`;
+                }
+            } catch (error) {
+                diseaseResult.innerHTML = '<p class="error">Error occurred while processing.</p>';
+            }
+        }
+
+        // Submit Yield Prediction
+        async function submitYieldForm() {
+            const formData = {
+                crop: document.getElementById('crop').value,
+                season: document.getElementById('season').value,
+                state: document.getElementById('state').value,
+                area: document.getElementById('area').value,
+                production: document.getElementById('production').value,
+                annualRainfall: document.getElementById('annualRainfall').value,
+                fertilizer: document.getElementById('fertilizer').value,
+                pesticide: document.getElementById('pesticide').value
+            };
+            yieldResult.innerHTML = 'Processing...';
+
+            try {
+                const response = await fetch('/predict_yield', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+
+                const result = await response.json();
+                if (response.ok) {
+                    yieldResult.innerHTML = `<h2>Predicted Yield: ${result.prediction}</h2>`;
+                } else {
+                    yieldResult.innerHTML = `<p class="error">${result.error}</p>`;
+                }
+            } catch (error) {
+                yieldResult.innerHTML = '<p class="error">Error occurred while processing.</p>';
+            }
+        }
+    </script>
+</body>
+</html>
